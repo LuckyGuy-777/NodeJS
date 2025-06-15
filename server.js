@@ -15,8 +15,7 @@ app.set("view engine", "ejs"); // ejs라이브러리 세팅
 const { MongoClient } = require("mongodb");
 
 let db;
-const url =
-  "mongodb+srv://admin:ymzdc380@cluster0.ebpoh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const url = "몽고db url";
 new MongoClient(url)
   .connect()
   .then((client) => {
