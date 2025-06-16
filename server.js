@@ -1,3 +1,4 @@
+const e = require("express");
 const express = require("express"); // express 라이브러리 쓰겠다
 const app = express();
 
@@ -7,15 +8,22 @@ const app = express();
 
 //  public 파일등록. 현재경로 + 폴더
 app.use(express.static(__dirname + "/public"));
-app.set("view engine", "ejs"); // ejs라이브러리 세팅
+app.set("view engine", "ejs"); // ejs라이브러 리 세팅
+
+// 요청.body 세팅. 유저가 데이터 보내면,
+//  요청.body에 쉽게 데이터 바인딩 시켜주는 역할. 요청.body사용에 필요
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // html 파일에 데이터넣고싶다면, .ejs파일 만들기
 
 // 몽고DB라이브러리 사용법이라고 함
-const { MongoClient } = require("mongodb");
+// 몽고DB 데이터의 ID 사용목적 ObjectId
+const { MongoClient, ObjectId } = require("mongodb");
 
 let db;
-const url = "몽고db url";
+const url =
+  "mongodb+srv://유저명:비밀번호@cluster0.ebpoh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0 url";
 new MongoClient(url)
   .connect()
   .then((client) => {
@@ -65,4 +73,64 @@ app.get("/list", async (요청, 응답) => {
 
   // 파일이랑, 이름:데이터변수
   응답.render("list.ejs", { 글목록: result }); // views 폴더에 있으면, 파일명만 써도됨
+});
+
+app.get("/write", (요청, 응답) => {
+  응답.render("write.ejs");
+});
+
+// 2. 서버는 글을 출력해보고 검사
+app.post("/add", async (요청, 응답) => {
+  // 유저가 보낸값 확인가능. 사용하려면 세팅필요.
+  console.log(요청.body);
+
+  // db에 문제가 생길경우에 대비해.
+  try {
+    //요소가 비어있다면, 예외처리
+    if (요청.body.title == "" || 요청.body.content == "") {
+      응답.send("제목, 요소 입력 하센");
+    } else {
+      // 3. 몽고DB에 요청데이터 저장
+      await db
+        .collection("post")
+        .insertOne({ 제목: 요청.body.title, 내용: 요청.body.content });
+      응답.redirect("/list"); //처리 후, 응답. 페이지이동
+    }
+  } catch (error) {
+    console.log(error);
+    응답.status(500).send("서버에 에러났음");
+  }
+});
+
+// 유저가, detail/아무문자 입력시 라는뜻.
+// /detail/? 로 접속하든, 다 실행됨
+// /:?? 는 URL파라미터
+
+// 상세페이지 기능
+// 1. 유저가 /detail/? 에 접속하면 요청.params
+// 2. {_id:??} 글을 DB에서 조회해서,(링크 만들기.)
+// 3. ejs 파일에 삽입해 보여줌
+
+app.get("/detail/:id", async (요청, 응답) => {
+  // 잘못된 응답이 들어왔을때(에러상황)
+  // 에러가 나면 try코드 중지, catch 내용 실행
+  try {
+    // 몽고DB의 게시글ID를 변수에 저장(URL 파라미터)
+
+    let result = await db
+      .collection("post")
+      .findOne({ _id: new ObjectId(요청.params.id) });
+    console.log(result);
+    // result 가 null 일경우(유효하지 않은 URL)
+    // 예외처리
+    if (result == null) {
+      응답.status(400).send("URL이 유효하지 않습니다");
+    }
+
+    응답.render("detail.ejs", { 글목록: result });
+  } catch (e) {
+    // 5XX 서버문제, 4XX 유저문제
+    console.log(e);
+    응답.status(404).send("URL이 올바르지 않습니다.");
+  }
 });
