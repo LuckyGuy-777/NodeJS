@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="/main.css" />
+  </head>
+  <body class="grey-bg">
+    <%- include('nav.ejs') %>
+
+    <!-- 1. 글작성 페이지에 글써서 서버로 전송 -->
+    <!-- 수정은 PUT, 삭제는 DELETE. 폼태그는 GET,POST만 가능 -->
+    <!-- /요청URL 뒤에 ?_method=PUT 쓰면, POST가 PUT요청으로 바뀜 -->
+    <form class="form-box" action="/edit?_method=PUT" method="POST">
+      <h4>수정하기</h4>
+      <input name="id" value="<%= result._id %>" style="display: none" />
+      <input name="title" value="<%= result.title %>" />
+      <input name="content" value="<%= result.content %>" />
+      <button type="submit">전송</button>
+    </form>
+
+    <!-- PUT DELETE 쓰려면, AJAX or 외부라이브러리 사용 -->
+  </body>
+</html>

@@ -16,11 +16,27 @@
       <div class="list-box">
         <h4>
           <!-- id값을 이용해서, 글 링크 만들기 -->
-          <a href="/detail/<%= 글목록[i]._id %>"><%= 글목록[i].title %></a>
+          <a href="/detail/<%= 글목록[i]._id %>"> <%= 글목록[i].title %> </a>
+          <a href="/edit/<%= 글목록[i]._id %>">✏️</a>
+          <span class="delete">🗑️</span>
         </h4>
-        <p><%= 글목록[i].content %></p>
+        <p>글내용임</p>
       </div>
       <% } %>
     </div>
+
+    <!--  // 1. 삭제버튼 누르면 ajax 써서 서버로 요청
+      // delete 라는 클래스 의 태그 클릭되면, -->
+    <script>
+      document
+        .querySelectorAll(".delete")[0]
+        .addEventListener("click", function () {
+          fetch("/abc", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ a: 1 }),
+          });
+        });
+    </script>
   </body>
 </html>

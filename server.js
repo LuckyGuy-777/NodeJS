@@ -1,10 +1,16 @@
 const e = require("express");
 const express = require("express"); // express 라이브러리 쓰겠다
 const app = express();
+const mongoose = require("mongoose"); // 게시글수정의 ID유효성검사에 필요
+const methodOverride = require("method-override"); // form태그 method-override 용도
 
 // 이 런 방식들은 express 사용법임(라이브러리 사용법)
 // 라이브러리 사용법 왜워서 사용
 // => 은, function() 대신에 씀. 콜백함수라고 불림
+
+// form태그 method-override 용도
+// form 태그에서 PUT DELETE요청 사용하기 위함
+app.use(methodOverride("_method"));
 
 //  public 파일등록. 현재경로 + 폴더
 app.use(express.static(__dirname + "/public"));
@@ -23,7 +29,7 @@ const { MongoClient, ObjectId } = require("mongodb");
 
 let db;
 const url =
-  "mongodb+srv://유저명:비밀번호@cluster0.ebpoh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0 url";
+  "mongodb+srv://ID:PW@cluster0.ebpoh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0 url";
 new MongoClient(url)
   .connect()
   .then((client) => {
@@ -133,4 +139,68 @@ app.get("/detail/:id", async (요청, 응답) => {
     console.log(e);
     응답.status(404).send("URL이 올바르지 않습니다.");
   }
+});
+
+// 수정기능.
+// 1. 수정 버튼누르면 수정페이지로.
+// 2. 수정페이지엔 기존글이 있음.
+// 3. 전송 누르면 입력한내용으로 DB글 수정
+app.get("/edit/:id", async (요청, 응답) => {
+  // 유저가 URL 파라미터에 입력한 값으로, 글을 불러옴
+  let result = await db
+    .collection("post")
+    .findOne({ _id: new ObjectId(요청.params.id) });
+  console.log(result);
+  응답.render("edit.ejs", { result: result });
+});
+
+// 예외처리
+// 1. 유저가 _id이상하게보내면
+// 2. 유저가 title,content말고 다른내용으로 보내면?
+// 3. 이상한 에러로 수정이 실패하면?
+app.put("/edit", async (요청, 응답) => {
+  try {
+    // 게시글 유효성 검사에 필요( 유저가 title, content말고 다른내용으로 보내면?)
+    const allowedKeys = ["id", "title", "content"];
+    const keys = Object.keys(요청.body);
+    const invalidKeys = keys.filter((key) => !allowedKeys.includes(key));
+
+    // 좋아요 기능
+    // await db.collection("post").updateOne(
+    //     // 요청.body에 유저가 쓴 내용이 들어있음
+    //     { _id: 1 },
+    //     { $set: {like : 1 } }
+    //   );
+
+    // 1. 수정할 글내용이 없으면?
+    if (요청.body.title == "" || 요청.body.content == "") {
+      응답.send("수정할 내용을 입력해 주세요");
+    } else if (!mongoose.Types.ObjectId.isValid(요청.body.id)) {
+      // 유저가 _id 이상하게 보내면?
+      return 요청.status(400).send("유효한 게시글 ID가 아닙니다.");
+    } else if (invalidKeys.length > 0) {
+      // 유저가 title, content말고 다른내용으로 보내면?
+      return 응답.status(400).send("올바르지 못한 응답입니다.");
+    } else {
+      let result = await db.collection("post").updateOne(
+        // 요청.body에 유저가 쓴 내용이 들어있음
+        { _id: new ObjectId(요청.body.id) },
+        { $set: { title: 요청.body.title, content: 요청.body.content } }
+      );
+      console.log(result); // 수정결과 확인
+      응답.redirect("/list");
+    }
+  } catch (error) {
+    // 이상한 에러로 수정이 실패하면?
+    console.log(error);
+    응답.status(500).send("예상치 못한 에러 발생");
+  }
+});
+
+// 글 삭제기능
+// 1. 글삭제 버튼누르면 서버로 요청
+// 2. 서버는 확인후 해당글 DB에서 삭제(AJAX 사용)
+app.post("/abc", async (요청, 응답) => {
+  console.log("안녕");
+  console.log(요청.body);
 });
